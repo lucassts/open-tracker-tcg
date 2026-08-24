@@ -206,7 +206,9 @@ export function AccountScreen({ onBack }: { onBack: () => void }) {
               <Text style={styles.fieldLabel}>{a.syncLabel}</Text>
               {syncStatus ? (
                 syncStatus.error ? (
-                  <Text style={styles.syncError}>{a.syncError(syncStatus.error)}</Text>
+                  <Text style={styles.syncError}>
+                    {syncStatus.error === 'session' ? a.syncExpired : a.syncFailed}
+                  </Text>
                 ) : (
                   <Text style={styles.readonly}>
                     {a.syncOk(syncStatus.pushed, syncStatus.pulled)}

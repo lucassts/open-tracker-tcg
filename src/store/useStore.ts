@@ -9,10 +9,11 @@ import {
 } from '../types';
 import { seedMatches } from '../data/seed';
 import { flushQueue, newInstallId, toEvent, QUEUE_LIMIT } from '../services/telemetry';
-import { claimPayload, submitClaim } from '../services/social';
+import { claimPayload, submitClaim, sessionState } from '../services/social';
 import { pushMatches, pullMatches, ensureSyncId } from '../services/matchSync';
 import { shouldSync, SyncOutcome } from '../utils/syncThrottle';
 import { defaultDeckVersion, lastUseOfDeck } from '../utils/deckVersion';
+import { ehSessaoVencida } from '../services/erros';
 import { getArchetypeForDeck } from '../data/decks';
 
 /** Contador local para ids: `Date.now()` colide quando dois somem no mesmo ms. */
@@ -83,9 +84,22 @@ interface AppState {
    * pode virar erro na cara de quem só quis anotar uma partida — mas o
    * resultado volta, para a tela poder mostrar.
    *
-   *  só para quem não pode esperar o intervalo: ver .
+   * `force` só para quem não pode esperar o intervalo: ver `syncThrottle`.
    */
   syncMatches: (force?: boolean) => Promise<SyncOutcome>;
+  /**
+   * Anota que o servidor recusou por falta de sessão. As telas leem isto para
+   * pedir login em vez de mostrar um erro que a pessoa não pode resolver.
+   */
+  markNeedsLogin: () => void;
+  /**
+   * Confere se a sessão do servidor ainda existe.
+   *
+   * Roda ao abrir o app porque `social.enabled` fica salvo no aparelho e
+   * sobrevive à sessão: sem esta conferência o app se mostra conectado, e só a
+   * primeira ação que fala com o servidor descobre que não está.
+   */
+  checkSession: () => Promise<void>;
   /** Popula o app com partidas fictícias, para explorar as telas sem histórico. */
   loadDemoData: () => void;
   /** Tenta enviar a fila anônima. Silencioso: falha de rede não incomoda o usuário. */
@@ -419,9 +433,43 @@ export const useStore = create<AppState>()(
 
       // ── Parte social ───────────────────────────────────────
 
+      markNeedsLogin: () => {
+        if (get().settings.social.needsLogin) return;
+        set(state => ({
+          settings: {
+            ...state.settings,
+            social: { ...state.settings.social, needsLogin: true },
+          },
+        }));
+      },
+
+      checkSession: async () => {
+        const { social } = get().settings;
+        if (!social.enabled) return;
+
+        const estado = await sessionState();
+        // 'unknown' não decide nada: pode ser só falta de rede. Quem levanta a
+        // bandeira nesse caso é o próprio servidor, devolvendo 42501 — e para
+        // isso ele precisa ter sido alcançado.
+        if (estado === 'unknown') return;
+
+        const precisa = estado === 'none';
+        if (precisa === Boolean(social.needsLogin)) return;
+        set(state => ({
+          settings: {
+            ...state.settings,
+            social: { ...state.settings.social, needsLogin: precisa },
+          },
+        }));
+      },
+
       setSocial: (partial) => {
         set(state => {
           const social = { ...state.settings.social, ...partial };
+          // Entrar ou sair resolve a pendência de login das duas maneiras: com
+          // sessão nova não há o que avisar, e sem conta o aviso não faz
+          // sentido.
+          if (partial.enabled !== undefined) social.needsLogin = false;
           // Desligar corta o vínculo remoto de todos: sem conta, não há como
           // confirmar nada. Os apelidos ficam, viram oponentes locais.
           const opponents = partial.enabled === false
@@ -586,11 +634,21 @@ export const useStore = create<AppState>()(
           });
         } catch (e) {
           // Silencioso para quem só quis anotar uma partida, mas registrado:
-          // a tela de conta mostra o motivo em vez de deixar a pessoa achando
-          // que subiu.
-          const motivo = e instanceof Error ? e.message : String(e);
+          // as telas mostram o motivo em vez de deixar a pessoa achando que
+          // subiu. Sessão vencida ganha marca própria: não é falha de rede, é
+          // "entre de novo", e a tela precisa saber a diferença para dizer o
+          // que fazer.
+          const vencida = ehSessaoVencida(e);
           console.warn('[store] sincronização de partidas falhou:', e);
-          set({ syncStatus: { at: new Date().toISOString(), pushed: 0, pulled: 0, error: motivo } });
+          if (vencida) get().markNeedsLogin();
+          set({
+            syncStatus: {
+              at: new Date().toISOString(),
+              pushed: 0,
+              pulled: 0,
+              error: vencida ? 'session' : 'other',
+            },
+          });
           return 'error';
         }
         return 'ok';

@@ -13,6 +13,7 @@ import { DeckList } from '../components/charts/DeckList';
 import { FilterPickerModal } from '../components/FilterPickerModal';
 import { StatsShareModal } from '../components/StatsShareModal';
 import { Icon } from '../components/Icon';
+import { Chip, FilterRow, FilterPickerButton } from '../components/FilterControls';
 import { useT } from '../i18n/useT';
 
 const defaultFilters: Filters = {
@@ -23,67 +24,6 @@ const defaultFilters: Filters = {
   result: 'All',
   version: [],
 };
-
-// ─── Chip — para filtros simples (format, period, result) ──────────────────
-
-function Chip({ label, active, onPress }: { label: string; active: boolean; onPress: () => void }) {
-  return (
-    <Pressable
-      onPress={onPress}
-      style={[styles.chip, active && styles.chipActive]}
-    >
-      <Text style={[styles.chipText, active && styles.chipTextActive]}>{label}</Text>
-    </Pressable>
-  );
-}
-
-function FilterRow({ label, value, options, onChange }: {
-  label: string;
-  value: string;
-  options: { value: string; label: string }[];
-  onChange: (v: string) => void;
-}) {
-  return (
-    <View style={styles.filterRow}>
-      <Text style={styles.filterLabel}>{label}</Text>
-      <View style={styles.chips}>
-        {options.map(opt => (
-          <Chip key={opt.value} label={opt.label} active={value === opt.value} onPress={() => onChange(opt.value)} />
-        ))}
-      </View>
-    </View>
-  );
-}
-
-// ─── FilterPickerButton — abre modal com lista de decks ───────────────────
-
-function FilterPickerButton({ label, value, displayValue, onPress }: {
-  label: string;
-  value: string[];
-  displayValue: string;
-  onPress: () => void;
-}) {
-  const isFiltered = value.length > 0;
-  return (
-    <View style={styles.filterRow}>
-      <Text style={styles.filterLabel}>{label}</Text>
-      <Pressable onPress={onPress} style={[styles.pickerBtn, isFiltered && styles.pickerBtnActive]}>
-        <Text
-          style={[styles.pickerBtnText, isFiltered && styles.pickerBtnTextActive]}
-          numberOfLines={1}
-        >
-          {displayValue}
-        </Text>
-        <Icon
-          name="chev"
-          size={12}
-          stroke={isFiltered ? colors.accent : colors.ink3}
-          strokeWidth={2}
-        />
-      </Pressable>
-    </View>
-  );
-}
 
 // ─── ChartCard ─────────────────────────────────────────────────────────────
 
@@ -110,6 +50,7 @@ export function StatsScreen() {
   const chartW = screenWidth - 64;
   const matches = useStore(st => st.matches);
   const sharePrefs = useStore(st => st.settings.sharePrefs);
+  const social = useStore(st => st.settings.social);
   const [filters, setFilters] = React.useState<Filters>(defaultFilters);
 
   // Qual modal está aberto
@@ -196,6 +137,9 @@ export function StatsScreen() {
     : filters.version.length === 1
       ? (filters.version[0] || s.noVersion)
       : s.versionCount(filters.version.length);
+
+  // Quem assina o card: o apelido da conta, se houver uma conectada.
+  const autor = social.enabled && social.handle ? `@${social.handle}` : 'MTG TRACKER';
 
   // Label do período para o share card
   const periodLabelMap: Record<string, string> = {
@@ -396,6 +340,7 @@ export function StatsScreen() {
         periodLabel={periodLabel}
         winLabel={s.wins}
         lossLabel={s.losses}
+        author={autor}
         labels={{
           onPlay: s.onPlay,
           onDraw: s.onDraw,
@@ -461,67 +406,6 @@ const styles = StyleSheet.create({
     fontSize: 9,
     fontFamily: 'JetBrainsMono',
     color: colors.ink3,
-  },
-  filterRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    flexWrap: 'wrap',
-  },
-  filterLabel: {
-    width: 62,
-    fontSize: 9.5,
-    fontFamily: 'JetBrainsMono',
-    letterSpacing: 0.6,
-    textTransform: 'uppercase',
-    color: colors.ink3,
-  },
-  chips: { flex: 1, flexDirection: 'row', flexWrap: 'wrap', gap: 4 },
-  chip: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: colors.line,
-    backgroundColor: colors.surface,
-  },
-  chipActive: {
-    backgroundColor: colors.ink,
-    borderColor: colors.ink,
-  },
-  chipText: {
-    fontSize: 10.5,
-    fontFamily: 'Inter',
-    color: colors.ink,
-  },
-  chipTextActive: { color: '#fff' },
-  // ─── Picker button ───────────────────────────────────────────
-  pickerBtn: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: colors.line,
-    backgroundColor: colors.surface,
-    gap: 6,
-  },
-  pickerBtnActive: {
-    borderColor: colors.accent,
-    backgroundColor: colors.accentSoft,
-  },
-  pickerBtnText: {
-    flex: 1,
-    fontSize: 10.5,
-    fontFamily: 'Inter',
-    color: colors.ink,
-  },
-  pickerBtnTextActive: {
-    color: colors.accent,
-    fontWeight: '600',
   },
   // ─── Charts ─────────────────────────────────────────────────
   summary: {

@@ -182,6 +182,16 @@ export interface SocialSettings {
   email: string;
   /** Cidade padrão nas buscas de local. Fica no aparelho, não é enviada. */
   homeCity: string;
+  /**
+   * A sessão do servidor acabou, mas a conta segue salva aqui.
+   *
+   * Existe porque `enabled` sozinho mente: ele diz que há conta neste
+   * aparelho, não que o servidor ainda aceita as chamadas. Sem separar as duas
+   * coisas o app continua se mostrando conectado enquanto tudo falha com
+   * "permission denied", e a pessoa não tem como saber que precisa entrar de
+   * novo.
+   */
+  needsLogin?: boolean;
 }
 
 export const DEFAULT_SOCIAL: SocialSettings = {

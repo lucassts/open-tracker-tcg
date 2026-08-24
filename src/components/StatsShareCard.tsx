@@ -32,6 +32,12 @@ interface Props {
   /** Rótulo traduzido de derrota (ex: "D") */
   lossLabel: string;
   labels: ShareCardLabels;
+  /**
+   * Quem está compartilhando — o `@apelido` da conta, ou o nome do app para
+   * quem não tem conta. Chega por prop porque o card não conhece store nem
+   * i18n: ele desenha o que recebe.
+   */
+  author: string;
 }
 
 // ── Mini donut ring ──────────────────────────────────────────────────────────
@@ -193,7 +199,7 @@ function RecordSection({ label, rows, winShort, lossShort }: {
 }
 
 export function StatsShareCard({
-  stats, filters, prefs, periodLabel, winLabel, lossLabel, labels,
+  stats, filters, prefs, periodLabel, winLabel, lossLabel, labels, author,
 }: Props) {
   const streakSign = stats.streakType ? '+' : '';
 
@@ -218,7 +224,7 @@ export function StatsShareCard({
       {/* ── Header ── */}
       <View style={styles.header}>
         <View style={{ flex: 1 }}>
-          <Text style={styles.appName}>MTG TRACKER</Text>
+          <Text style={styles.appName}>{author}</Text>
           {prefs.context && (
             <Text style={styles.context} numberOfLines={2}>{contextLine}</Text>
           )}

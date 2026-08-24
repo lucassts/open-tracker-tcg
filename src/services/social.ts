@@ -73,6 +73,28 @@ export async function currentPlayerId(): Promise<string | null> {
   return data.session?.user.id ?? null;
 }
 
+/**
+ * Estado da sessão guardada neste aparelho.
+ *
+ * `unknown` existe e é o ponto todo: sem rede, renovar o token falha, e tratar
+ * essa falha como "sua sessão expirou" mandaria a pessoa refazer login por
+ * causa de um elevador sem sinal. Só `none` — não há sessão guardada, nem
+ * vencida nem nada — é conclusivo o bastante para pedir login.
+ */
+export type SessionState = 'live' | 'none' | 'unknown';
+
+export async function sessionState(): Promise<SessionState> {
+  const supabase = getSupabase();
+  if (!supabase) return 'unknown';
+  try {
+    const { data, error } = await supabase.auth.getSession();
+    if (data.session) return 'live';
+    return error ? 'unknown' : 'none';
+  } catch {
+    return 'unknown';
+  }
+}
+
 /** Regra do apelido, repetida no banco. Aqui existe para avisar antes da ida. */
 export const HANDLE_RE = /^[a-z0-9_]{3,20}$/;
 

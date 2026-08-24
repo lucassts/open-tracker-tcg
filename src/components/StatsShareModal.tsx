@@ -26,10 +26,11 @@ interface Props {
   winLabel: string;
   lossLabel: string;
   labels: ShareCardLabels;
+  author: string;
 }
 
 export function StatsShareModal({
-  visible, onClose, stats, filters, prefs, periodLabel, winLabel, lossLabel, labels,
+  visible, onClose, stats, filters, prefs, periodLabel, winLabel, lossLabel, labels, author,
 }: Props) {
   const cardRef = React.useRef<View>(null);
   const [loading, setLoading] = React.useState(false);
@@ -119,6 +120,7 @@ export function StatsShareModal({
                   winLabel={winLabel}
                   lossLabel={lossLabel}
                   labels={labels}
+                  author={author}
                 />
               </View>
             </View>

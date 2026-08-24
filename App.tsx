@@ -23,6 +23,7 @@ function AppRoot() {
   const onboarded = useStore(s => s.settings.onboarded);
   const flushTelemetry = useStore(s => s.flushTelemetry);
   const syncMatches = useStore(s => s.syncMatches);
+  const checkSession = useStore(s => s.checkSession);
   const [fontsLoaded, fontError] = useFonts(fontAssets);
   /**
    * Ao abrir e sempre que o app volta ao primeiro plano: esvazia a fila
@@ -37,7 +38,9 @@ function AppRoot() {
    * Sem conta ou sem fila, os dois são no-op.
    */
   React.useEffect(() => {
-    const rodar = () => { void flushTelemetry(); void syncMatches(); };
+    // A conferência de sessão vem antes: se ela acabou, a sincronização já
+    // sabe por que falhou e a tela já tem o que dizer.
+    const rodar = () => { void checkSession(); void flushTelemetry(); void syncMatches(); };
     rodar();
     const sub = AppState.addEventListener('change', state => {
       if (state === 'active') rodar();
@@ -47,7 +50,7 @@ function AppRoot() {
     // valendo: se algo ja sincronizou agora, isto nao repete.
     const relogio = setInterval(rodar, AUTO_INTERVAL_MS);
     return () => { sub.remove(); clearInterval(relogio); };
-  }, [flushTelemetry, syncMatches]);
+  }, [flushTelemetry, syncMatches, checkSession]);
 
   // Falha ao carregar fonte não impede o app de abrir: o texto sai na fonte do
   // sistema, o que é feio mas utilizável.

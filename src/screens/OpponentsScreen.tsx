@@ -10,6 +10,7 @@ import { Opponent } from '../types';
 import { useT } from '../i18n/useT';
 import { useKeyboardAware } from '../hooks/useKeyboardAware';
 import { SOCIAL_AVAILABLE } from '../services/supabase';
+import { mensagemDeErro, ehSessaoVencida } from '../services/erros';
 import {
   sendFriendRequest, listFriendRequests, resolveFriendRequest,
   listFriends, removeFriend, FriendRequest,
@@ -107,6 +108,16 @@ export function OpponentsScreen({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [social.enabled]);
 
+  /**
+   * Roda uma ação e conta o que aconteceu, dando certo ou errado.
+   *
+   * O `String(e)` que estava aqui devolvia "[object Object]": o PostgREST não
+   * rejeita com `Error`, rejeita com um objeto simples. A caixa vermelha
+   * aparecia sem dizer nada, e o pedido de amizade que falhava era
+   * indistinguível do que dava certo.
+   */
+  const markNeedsLogin = useStore(st => st.markNeedsLogin);
+
   const run = async (key: string, fn: () => Promise<void>) => {
     setBusy(key);
     setError(null);
@@ -114,7 +125,14 @@ export function OpponentsScreen({
     try {
       await fn();
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      if (ehSessaoVencida(e)) markNeedsLogin();
+      setError(mensagemDeErro(e, {
+        sessaoVencida: o.sessionExpired,
+        naoAchei: o.errNotFound,
+        voceMesmo: o.errYourself,
+        semRede: o.errNetwork,
+        generico: o.errGeneric,
+      }));
     } finally {
       setBusy(null);
     }
@@ -184,6 +202,15 @@ export function OpponentsScreen({
 
       <Text style={styles.pageTitle}>{o.title}</Text>
       <Text style={styles.intro}>{o.intro}</Text>
+
+      {/* A conta está salva aqui, mas o servidor não aceita mais as chamadas. */}
+      {social.enabled && social.needsLogin && (
+        <Pressable style={styles.expiredBox} onPress={onOpenAccount}>
+          <Icon name="shield" size={16} stroke={colors.bad} />
+          <Text style={styles.expiredText}>{o.sessionExpired}</Text>
+          <Icon name="chev" size={14} stroke={colors.bad} />
+        </Pressable>
+      )}
 
       {/* Adicionar oponente local — funciona sem conta */}
       <View style={styles.card}>
@@ -455,6 +482,17 @@ const styles = StyleSheet.create({
   primaryBtnText: { fontSize: 13, fontWeight: '600', fontFamily: 'Inter', color: '#fff' },
   btnOff: { opacity: 0.4 },
 
+  expiredBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.bad,
+    backgroundColor: colors.badSoft,
+  },
+  expiredText: { flex: 1, fontSize: 12, fontFamily: 'Inter', color: colors.bad, lineHeight: 17 },
   noticeBox: {
     borderRadius: 12, borderWidth: 1, borderColor: 'rgba(45,138,94,0.4)',
     backgroundColor: colors.goodSoft, padding: 12,

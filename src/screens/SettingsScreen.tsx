@@ -260,47 +260,6 @@ export function SettingsScreen() {
         </Card>
       </View>
 
-      {/* Privacy */}
-      <View>
-        <SectionLabel label={s.privacy} />
-        <Card>
-          <Row>
-            <Icon name="shield" size={18} stroke={colors.ink3} />
-            <View style={{ flex: 1 }}>
-              <Text style={styles.rowTitle}>{s.onDevice}</Text>
-              <Text style={styles.rowSub}>{s.onDeviceSub}</Text>
-            </View>
-            <Badge label={s.alwaysOn} />
-          </Row>
-          <View style={styles.rowDivider} />
-          <Row>
-            <Icon name="share" size={18} stroke={colors.ink3} />
-            <View style={{ flex: 1 }}>
-              <Text style={styles.rowTitle}>{s.shareAnon}</Text>
-              <Text style={styles.rowSub}>{s.shareAnonSub}</Text>
-            </View>
-            <Toggle value={settings.shareAnon} onValueChange={v => set('shareAnon', v)} />
-          </Row>
-
-          {settings.shareAnon && (
-            <>
-              <View style={styles.rowDivider} />
-              <View style={styles.shareDetail}>
-                <Text style={styles.shareLabel}>{s.shareWhatLabel}</Text>
-                <Text style={styles.shareMono}>{s.shareWhat}</Text>
-                <Text style={styles.shareStatus}>
-                  {!TELEMETRY_CONFIGURED
-                    ? s.shareNotConfigured
-                    : pendingCount > 0
-                      ? s.sharePending(pendingCount)
-                      : s.shareUpToDate}
-                </Text>
-              </View>
-            </>
-          )}
-        </Card>
-      </View>
-
       {/* Data */}
       <View>
         <SectionLabel label={s.data} />
@@ -428,6 +387,47 @@ export function SettingsScreen() {
         </View>
         <Icon name="chev" size={14} stroke={colors.accent} />
       </Pressable>
+
+      {/* Privacy */}
+      <View>
+        <SectionLabel label={s.privacy} />
+        <Card>
+          <Row>
+            <Icon name="shield" size={18} stroke={colors.ink3} />
+            <View style={{ flex: 1 }}>
+              <Text style={styles.rowTitle}>{s.onDevice}</Text>
+              <Text style={styles.rowSub}>{s.onDeviceSub}</Text>
+            </View>
+            <Badge label={s.alwaysOn} />
+          </Row>
+          <View style={styles.rowDivider} />
+          <Row>
+            <Icon name="share" size={18} stroke={colors.ink3} />
+            <View style={{ flex: 1 }}>
+              <Text style={styles.rowTitle}>{s.shareAnon}</Text>
+              <Text style={styles.rowSub}>{s.shareAnonSub}</Text>
+            </View>
+            <Toggle value={settings.shareAnon} onValueChange={v => set('shareAnon', v)} />
+          </Row>
+
+          {settings.shareAnon && (
+            <>
+              <View style={styles.rowDivider} />
+              <View style={styles.shareDetail}>
+                <Text style={styles.shareLabel}>{s.shareWhatLabel}</Text>
+                <Text style={styles.shareMono}>{s.shareWhat}</Text>
+                <Text style={styles.shareStatus}>
+                  {!TELEMETRY_CONFIGURED
+                    ? s.shareNotConfigured
+                    : pendingCount > 0
+                      ? s.sharePending(pendingCount)
+                      : s.shareUpToDate}
+                </Text>
+              </View>
+            </>
+          )}
+        </Card>
+      </View>
 
       <Text style={styles.version}>{s.version}</Text>
       <View style={{ height: 20 }} />
