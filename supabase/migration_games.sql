@@ -116,6 +116,12 @@ begin
 end;
 $$;
 
+-- `create or replace` não muda o tipo de retorno de uma função que já
+-- existe: o placar é uma coluna nova na tabela devolvida, então a antiga
+-- precisa sair antes. O `drop` derruba as permissões junto, e por isso elas
+-- são refeitas logo abaixo.
+drop function if exists public.pull_matches();
+
 create or replace function public.pull_matches()
 returns table (
   id uuid, played_on date, format text, my_deck text, opp_deck text,
@@ -253,7 +259,9 @@ begin
 end;
 $$;
 
+revoke all on function public.pull_matches()              from public, anon;
 revoke all on function public.games_do_json(jsonb)        from public, anon;
 revoke all on function public.games_invertidos(boolean[]) from public, anon;
+grant execute on function public.pull_matches()              to authenticated;
 grant execute on function public.games_do_json(jsonb)        to authenticated;
 grant execute on function public.games_invertidos(boolean[]) to authenticated;
