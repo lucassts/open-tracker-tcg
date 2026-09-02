@@ -18,6 +18,7 @@
 import * as Crypto from 'expo-crypto';
 import { getSupabase } from './supabase';
 import { Match, Format, Archetype } from '../types';
+import { gamesParaServidor, gamesDoServidor } from '../utils/games';
 
 /** Só o dia importa: a hora exata nunca sai do aparelho. */
 function playedOn(iso: string): string {
@@ -40,6 +41,7 @@ function toRow(match: Match): Record<string, unknown> {
     on_play: match.onPlay ?? null,
     won: match.won,
     drew: match.drew ?? false,
+    games: gamesParaServidor(match.games),
     notes: match.notes ?? '',
     deck_version: match.deckVersion ?? null,
     opponent_id: match.opponentId ?? null,
@@ -107,6 +109,7 @@ export async function pullMatches(): Promise<RemoteMatch[]> {
     onPlay: r.on_play === null ? false : Boolean(r.on_play),
     won: Boolean(r.won),
     drew: Boolean(r.drew),
+    games: gamesDoServidor(r.games),
     notes: String(r.notes ?? ''),
     deckVersion: (r.deck_version as string) || undefined,
     opponentId: (r.opponent_id as string) || undefined,

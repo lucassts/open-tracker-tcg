@@ -639,12 +639,19 @@ export const useStore = create<AppState>()(
                 } as Match);
                 return;
               }
-              // O servidor manda em duas coisas e só nelas: o deck do oponente,
-              // que é lido do lado dele, e o par. O resto é do aparelho.
+              // O servidor manda em três coisas e só nelas: o deck do
+              // oponente, que é lido do lado dele; o par; e o placar, mas só
+              // quando este aparelho não tem nenhum — assim a partida que o
+              // oponente marcou chega, sem nunca sobrescrever o que foi
+              // marcado aqui.
+              const doPlacar = local.games ?? r.games;
+              const resultado = local.games ? null : resultadoDosGames(r.games);
               porSync.set(r.syncId, {
                 ...local,
                 oppDeck: r.oppDeck ?? local.oppDeck,
                 pairId: r.pairId ?? local.pairId,
+                games: doPlacar,
+                ...(resultado ?? {}),
               });
             });
 

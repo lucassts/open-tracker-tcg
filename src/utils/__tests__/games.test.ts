@@ -1,5 +1,6 @@
 import {
   contar, resultadoDosGames, gamesSupostos, placarTexto, Games,
+  gamesParaServidor, gamesDoServidor,
 } from '../games';
 
 const g = (...v: Array<'me' | 'opp' | null>): Games =>
@@ -81,5 +82,42 @@ describe('placarTexto', () => {
   it('fica vazio sem games', () => {
     expect(placarTexto(g())).toBe('');
     expect(placarTexto(undefined)).toBe('');
+  });
+});
+
+/**
+ * O servidor guarda por perspectiva do dono da linha, para poder inverter o
+ * placar do oponente com uma negação. A tradução tem de ser exata nos dois
+ * sentidos, senão um 2x1 vira 1x2 na volta.
+ */
+describe('tradução para o servidor', () => {
+  it('me vira true e opp vira false', () => {
+    expect(gamesParaServidor(g('me', 'opp', 'me'))).toEqual([true, false, true]);
+  });
+
+  it('game não jogado vira null', () => {
+    expect(gamesParaServidor(g('me', 'me'))).toEqual([true, true, null]);
+  });
+
+  it('placar vazio não vai para o servidor', () => {
+    expect(gamesParaServidor(g())).toBeNull();
+    expect(gamesParaServidor(undefined)).toBeNull();
+  });
+
+  it('ida e volta preserva o placar', () => {
+    const original = g('opp', 'me', 'opp');
+    expect(gamesDoServidor(gamesParaServidor(original))).toEqual(original);
+  });
+
+  it('resposta sem placar volta indefinida', () => {
+    expect(gamesDoServidor(null)).toBeUndefined();
+    expect(gamesDoServidor([null, null, null])).toBeUndefined();
+    expect(gamesDoServidor('nada disso')).toBeUndefined();
+  });
+
+  it('a inversão do servidor equivale a trocar os lados', () => {
+    const meu = gamesParaServidor(g('me', 'opp', 'me'))!;
+    const dele = meu.map(v => (v === null ? null : !v));
+    expect(gamesDoServidor(dele)).toEqual(g('opp', 'me', 'opp'));
   });
 });

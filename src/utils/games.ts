@@ -69,3 +69,24 @@ export function placarTexto(games: Games | undefined): string {
   if (me + opp === 0) return '';
   return `${me}×${opp}`;
 }
+
+/**
+ * O placar como o servidor guarda: um booleano por game, do ponto de vista do
+ * dono da linha — true = o dono levou aquele game, null = não jogado.
+ *
+ * A tradução existe porque "eu" e "ele" não são absolutos: as duas linhas da
+ * mesma partida são espelhos, e guardar por perspectiva permite ao servidor
+ * inverter o placar do oponente com uma negação, em vez de reescrever rótulos.
+ */
+export function gamesParaServidor(games: Games | undefined): (boolean | null)[] | null {
+  if (!games || games.every(g => !g)) return null;
+  return games.map(g => (g === null ? null : g === 'me'));
+}
+
+export function gamesDoServidor(valor: unknown): Games | undefined {
+  if (!Array.isArray(valor)) return undefined;
+  const lado = (v: unknown): GameWinner =>
+    v === true ? 'me' : v === false ? 'opp' : null;
+  const games: Games = [lado(valor[0]), lado(valor[1]), lado(valor[2])];
+  return games.some(Boolean) ? games : undefined;
+}
