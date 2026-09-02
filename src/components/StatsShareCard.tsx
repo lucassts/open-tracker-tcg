@@ -18,6 +18,7 @@ export interface ShareCardLabels {
   oppPlayers: string;
   venues: string;
   noVersion: string;
+  noVenue: string;
 }
 
 interface Props {
@@ -212,6 +213,10 @@ export function StatsShareCard({
   else if (filters.version.length > 1) contextParts.push(`${filters.version.length} v.`);
   if (filters.oppDeck.length === 1) contextParts.push(`vs ${filters.oppDeck[0]}`);
   else if (filters.oppDeck.length > 1) contextParts.push(`vs ${filters.oppDeck.length} decks`);
+  // O local entra no contexto porque muda a leitura do número: 70% na liga e
+  // 70% em casa não querem dizer a mesma coisa.
+  if (filters.venue.length === 1) contextParts.push(filters.venue[0] || labels.noVenue);
+  else if (filters.venue.length > 1) contextParts.push(`${filters.venue.length} ${labels.venues}`);
   contextParts.push(periodLabel);
   const contextLine = contextParts.join('  ·  ');
 

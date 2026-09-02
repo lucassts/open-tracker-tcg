@@ -23,6 +23,7 @@ const defaultFilters: Filters = {
   period: 'All',
   result: 'All',
   version: [],
+  venue: [],
 };
 
 // ─── ChartCard ─────────────────────────────────────────────────────────────
@@ -55,7 +56,7 @@ export function StatsScreen() {
 
   // Qual modal está aberto
   const [openModal, setOpenModal] =
-    React.useState<null | 'deck' | 'oppDeck' | 'version' | 'share'>(null);
+    React.useState<null | 'deck' | 'oppDeck' | 'version' | 'venue' | 'share'>(null);
 
   const filtered = React.useMemo(() => applyFilters(matches, filters), [matches, filters]);
   const stats = React.useMemo(() => computeStats(filtered), [filtered]);
@@ -78,6 +79,19 @@ export function StatsScreen() {
       .sort((a, b) => (a === '' ? 1 : b === '' ? -1 : b.localeCompare(a)))
       .map(v => ({ value: v, label: v || s.noVersion }));
   }, [matches, filters.deck, s.noVersion]);
+
+  /**
+   * Locais que aparecem no histórico. A opção "sem local" só entra quando há
+   * partida sem local — para quem sempre anota onde jogou, ela seria uma
+   * linha morta.
+   */
+  const venueOptions = React.useMemo(() => {
+    const nomes = new Set(matches.map(m => m.venueName || ''));
+    if (nomes.size === 1 && nomes.has('')) return [];
+    return [...nomes]
+      .sort((a, b) => (a === '' ? 1 : b === '' ? -1 : a.localeCompare(b)))
+      .map(v => ({ value: v, label: v || s.noVenue }));
+  }, [matches, s.noVenue]);
 
   // Trocar de deck invalida a seleção de versão que era daquele outro deck.
   React.useEffect(() => {
@@ -114,6 +128,7 @@ export function StatsScreen() {
     filters.deck.length > 0,
     filters.oppDeck.length > 0,
     filters.version.length > 0,
+    filters.venue.length > 0,
     filters.period !== 'All',
     filters.result !== 'All',
   ].filter(Boolean).length;
@@ -132,6 +147,11 @@ export function StatsScreen() {
     : filters.oppDeck.length === 1
       ? filters.oppDeck[0]
       : s.deckCount(filters.oppDeck.length);
+  const venueDisplay = filters.venue.length === 0
+    ? s.all
+    : filters.venue.length === 1
+      ? (filters.venue[0] || s.noVenue)
+      : s.venueCount(filters.venue.length);
   const versionDisplay = filters.version.length === 0
     ? s.all
     : filters.version.length === 1
@@ -195,6 +215,15 @@ export function StatsScreen() {
               value={filters.version}
               displayValue={versionDisplay}
               onPress={() => setOpenModal('version')}
+            />
+          )}
+
+          {venueOptions.length > 0 && (
+            <FilterPickerButton
+              label={s.filterVenue}
+              value={filters.venue}
+              displayValue={venueDisplay}
+              onPress={() => setOpenModal('venue')}
             />
           )}
 
@@ -330,6 +359,19 @@ export function StatsScreen() {
         applyLabel={s.filterVersion}
       />
 
+      {/* Modal — Local (multi-select) */}
+      <FilterPickerModal
+        visible={openModal === 'venue'}
+        title={s.filterVenue}
+        options={venueOptions}
+        value={filters.venue}
+        onChange={v => setF('venue', v as Filters['venue'])}
+        onClose={() => setOpenModal(null)}
+        searchPlaceholder={s.searchVenue}
+        allLabel={s.all}
+        applyLabel={s.filterVenue}
+      />
+
       {/* Modal — Share */}
       <StatsShareModal
         visible={openModal === 'share'}
@@ -349,6 +391,7 @@ export function StatsScreen() {
           oppPlayers: s.oppPlayers,
           venues: s.venues,
           noVersion: s.noVersion,
+          noVenue: s.noVenue,
         }}
       />
     </>

@@ -6,6 +6,15 @@ export interface Match {
   oppDeck: string;
   archetype: Archetype;
   onPlay: boolean;
+  /**
+   * Quem levou cada um dos três games.
+   *
+   * É a fonte do resultado, não um detalhe dele: `won` e `drew` continuam
+   * gravados porque estatística, CSV e servidor já os leem, mas quem manda são
+   * os games. Partidas anteriores ao campo ganharam um placar suposto na
+   * migração — ver `gamesSupostos`.
+   */
+  games?: import('../utils/games').Games;
   won: boolean;
   /** true = empate/draw. Retrocompat: undefined means loss when won=false */
   drew?: boolean;
@@ -213,6 +222,11 @@ export interface Filters {
    * passar a ser versionado.
    */
   version: string[];
+  /**
+   * Locais. `[]` = todos. String vazia é "sem local": partida anotada sem
+   * dizer onde foi, que é a maioria de quem joga em casa.
+   */
+  venue: string[];
 }
 
 export type Format =

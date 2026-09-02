@@ -11,6 +11,8 @@ import { Format } from '../types';
 import { useStore } from '../store/useStore';
 import { useT } from '../i18n/useT';
 import { useKeyboardAware } from '../hooks/useKeyboardAware';
+import { LANGUAGES } from '../i18n/languages';
+import { Icon } from '../components/Icon';
 import { SOCIAL_AVAILABLE } from '../services/supabase';
 import { signUp, signIn, AuthError, HANDLE_RE, normalizeHandle } from '../services/social';
 
@@ -49,17 +51,20 @@ export function OnboardingScreen() {
   const o = t.onboarding;
   const a = t.account;
   const { scrollProps, subirCampo, folga } = useKeyboardAware();
-  const [step, setStep] = React.useState(1);
+  const [step, setStep] = React.useState(0);
   const [fmt, setFmt] = React.useState<Format>('Commander');
   const [deck, setDeck] = React.useState('');
   const [share, setShare] = React.useState(true);
   const updateSettings = useStore(s => s.updateSettings);
+  const idioma = useStore(s => s.settings.language);
   const setSocial = useStore(s => s.setSocial);
   const syncMatches = useStore(s => s.syncMatches);
 
   // A conta é o último passo, e só existe quando há servidor: num build sem
   // Supabase configurado o passo seria uma tela que não faz nada.
   const LAST = SOCIAL_AVAILABLE ? 5 : 4;
+  /** Com o idioma na frente, são LAST+1 telas, e o passo 0 é a primeira. */
+  const TOTAL = LAST + 1;
 
   /**
    * Criar OU entrar. Quem reinstala o app precisa recuperar o historico aqui
@@ -143,6 +148,32 @@ export function OnboardingScreen() {
         contentContainerStyle={[styles.scrollContent, { paddingTop: insets.top + 16 }]}
         showsVerticalScrollIndicator={false}
       >
+        {step === 0 && (
+          <>
+            {/* Antes de qualquer outra coisa: não adianta explicar o app numa
+                língua que a pessoa não lê. */}
+            <Text style={styles.h1}>{o.languageTitle}</Text>
+            <Text style={styles.body}>{o.languageBody}</Text>
+            <View style={styles.card}>
+              {LANGUAGES.map((lang, i) => (
+                <Pressable
+                  key={lang.code}
+                  onPress={() => updateSettings({ language: lang.code })}
+                  style={[styles.langRow, i > 0 && styles.langDivider]}
+                >
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.langLabel}>{lang.label}</Text>
+                    <Text style={styles.langSub}>{lang.sub}</Text>
+                  </View>
+                  {idioma === lang.code && (
+                    <Icon name="check" size={16} stroke={colors.ink} />
+                  )}
+                </Pressable>
+              ))}
+            </View>
+          </>
+        )}
+
         {step === 1 && (
           <>
             <Badge label={o.badge} />
@@ -157,7 +188,7 @@ export function OnboardingScreen() {
 
         {step === 2 && (
           <>
-            <Text style={styles.stepLabel}>{o.stepLabel(2, LAST)}</Text>
+            <Text style={styles.stepLabel}>{o.stepLabel(3, TOTAL)}</Text>
             <Text style={styles.h2}>{o.step2Title}</Text>
             <Text style={styles.body2}>{o.step2Body}</Text>
             <View style={styles.formatGrid}>
@@ -182,7 +213,7 @@ export function OnboardingScreen() {
 
         {step === 3 && (
           <>
-            <Text style={styles.stepLabel}>{o.stepLabel(3, LAST)}</Text>
+            <Text style={styles.stepLabel}>{o.stepLabel(4, TOTAL)}</Text>
             <Text style={styles.h2}>{o.step3Title}</Text>
             <Text style={styles.body2}>{o.step3Body}</Text>
             <DeckSelector
@@ -204,7 +235,7 @@ export function OnboardingScreen() {
 
         {step === 4 && (
           <>
-            <Text style={styles.stepLabel}>{o.stepLabel(4, LAST)}</Text>
+            <Text style={styles.stepLabel}>{o.stepLabel(5, TOTAL)}</Text>
             <Text style={styles.h2}>{o.step4Title}</Text>
             <Text style={styles.body2}>{o.step4Body}</Text>
             <View style={styles.card}>
@@ -225,7 +256,7 @@ export function OnboardingScreen() {
 
         {step === 5 && (
           <>
-            <Text style={styles.stepLabel}>{o.stepLabel(5, LAST)}</Text>
+            <Text style={styles.stepLabel}>{o.stepLabel(6, TOTAL)}</Text>
             <Text style={styles.h2}>{o.step5Title}</Text>
             <Text style={styles.body2}>{o.step5Body}</Text>
 
@@ -312,7 +343,7 @@ export function OnboardingScreen() {
         SDK 54). Sem a folga de baixo, o botão fica atrás dos botões do Android.
       */}
       <View style={[styles.footer, { paddingBottom: insets.bottom + 24 }]}>
-        <Dots step={step} total={LAST} />
+        <Dots step={step + 1} total={TOTAL} />
         <Pressable
           style={[styles.cta, step === 5 && (!canCreate || busy) && styles.ctaOff]}
           onPress={next}
@@ -341,6 +372,10 @@ export function OnboardingScreen() {
 }
 
 const styles = StyleSheet.create({
+  langRow: { flexDirection: 'row', alignItems: 'center', padding: 14, gap: 10 },
+  langDivider: { borderTopWidth: 1, borderTopColor: colors.line2 },
+  langLabel: { fontSize: 15, fontFamily: 'Inter', fontWeight: '500', color: colors.ink },
+  langSub: { fontSize: 12, fontFamily: 'Inter', color: colors.ink3, marginTop: 2 },
   container: { flex: 1, backgroundColor: colors.bg },
   scroll: { flex: 1 },
   scrollContent: {

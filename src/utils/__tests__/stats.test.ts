@@ -15,7 +15,8 @@ const m = (over: Partial<Match> & { id: string }): Match => ({
 });
 
 const noFilters: Filters = {
-  format: 'All', deck: [], oppDeck: [], period: 'All', result: 'All', version: [],
+  format: 'All', deck: [], oppDeck: [], period: 'All', result: 'All',
+  version: [], venue: [],
 };
 
 describe('filtro de versão', () => {
@@ -132,5 +133,36 @@ describe('applyFilters', () => {
     const old = new Date(Date.now() - 30 * 86400000).toISOString();
     const all = [m({ id: 'novo', date: recent }), m({ id: 'velho', date: old })];
     expect(applyFilters(all, { ...noFilters, period: '7d' }).map(x => x.id)).toEqual(['novo']);
+  });
+});
+
+/**
+ * O filtro de local vale para as estatísticas e, por tabela, para o card de
+ * compartilhamento — que é onde o Lucas sentiu falta dele.
+ */
+describe('filtro de local', () => {
+  const rows = [
+    m({ id: '1', venueName: 'Liga Lendária', won: true }),
+    m({ id: '2', venueName: 'Casa do Rafa', won: false }),
+    m({ id: '3', won: true }),
+  ];
+
+  it('lista vazia não filtra nada', () => {
+    expect(applyFilters(rows, noFilters)).toHaveLength(3);
+  });
+
+  it('filtra por um local', () => {
+    const r = applyFilters(rows, { ...noFilters, venue: ['Liga Lendária'] });
+    expect(r.map(x => x.id)).toEqual(['1']);
+  });
+
+  it('aceita vários locais', () => {
+    const r = applyFilters(rows, { ...noFilters, venue: ['Liga Lendária', 'Casa do Rafa'] });
+    expect(r.map(x => x.id)).toEqual(['1', '2']);
+  });
+
+  it('string vazia pega a partida sem local', () => {
+    const r = applyFilters(rows, { ...noFilters, venue: [''] });
+    expect(r.map(x => x.id)).toEqual(['3']);
   });
 });

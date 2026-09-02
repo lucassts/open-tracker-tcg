@@ -1,4 +1,5 @@
 import { Match } from '../types';
+import { Games } from '../utils/games';
 
 const DECKS_MINE = ['Atraxa', 'Kinnan', 'Burn', 'Yuriko'];
 const DECKS_OPP = [
@@ -44,6 +45,13 @@ export function seedMatches(): Match[] {
     if (archetype === 'Aggro') winProb += 0.15;
     if (archetype === 'Control') winProb -= 0.1;
     const won = rng() < winProb;
+    // Placar coerente com o resultado, com variedade: nem toda vitória é 2x1.
+    // Sem isto o exemplo mostraria 48 partidas sem placar numa tela que agora
+    // gira em torno dele.
+    const varreu = rng() < 0.4;
+    const games: Games = won
+      ? (varreu ? ['me', 'me', null] : ['me', 'opp', 'me'])
+      : (varreu ? ['opp', 'opp', null] : ['opp', 'me', 'opp']);
 
     out.push({
       id: 'm' + i,
@@ -53,6 +61,7 @@ export function seedMatches(): Match[] {
       oppDeck,
       archetype,
       onPlay,
+      games,
       won,
       notes: i % 6 === 0 ? 'Mulligan to 6, topdecked perfectly.' : '',
       // Nem toda partida tem esses campos na vida real, e o exemplo reflete

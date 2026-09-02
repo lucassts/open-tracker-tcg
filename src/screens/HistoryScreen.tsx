@@ -1,6 +1,6 @@
 import React from 'react';
 import {
-  View, Text, Pressable, ScrollView, StyleSheet, ActivityIndicator,
+  View, Text, Pressable, ScrollView, StyleSheet, ActivityIndicator, Alert,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -15,6 +15,7 @@ import { useTabReset } from '../hooks/useTabReset';
 import { secondsUntilNext } from '../utils/syncThrottle';
 import { Filters } from '../types';
 import { applyFilters } from '../utils/stats';
+import { placarTexto } from '../utils/games';
 import { FilterRow, FilterPickerButton } from '../components/FilterControls';
 import { FilterPickerModal } from '../components/FilterPickerModal';
 
@@ -25,6 +26,7 @@ const semFiltro: Filters = {
   period: 'All',
   result: 'All',
   version: [],
+  venue: [],
 };
 
 function groupByDate(matches: Match[], locale: string) {
@@ -87,6 +89,23 @@ export function HistoryScreen() {
    * O intervalo de um minuto continua valendo: apertar dez vezes seguidas não
    * vira dez idas ao servidor.
    */
+  /**
+   * Apagar pergunta antes. Não é desfazível e a partida some das
+   * estatísticas junto — o tipo de coisa que ninguém quer descobrir por um
+   * toque errado.
+   */
+  const deleteMatch = useStore(s => s.deleteMatch);
+  const confirmarExclusao = (m: Match) => {
+    Alert.alert(t.matchForm.deleteTitle, t.matchForm.deleteBody, [
+      { text: t.matchForm.cancel, style: 'cancel' },
+      {
+        text: t.matchForm.deleteConfirm,
+        style: 'destructive',
+        onPress: () => { deleteMatch(m.id); setEditMatch(null); },
+      },
+    ]);
+  };
+
   const atualizar = () => {
     setSyncing(true);
     setAviso(null);
@@ -141,9 +160,14 @@ export function HistoryScreen() {
             <Icon name="back" size={16} stroke={colors.ink} />
             <Text style={styles.backText}>{h.back}</Text>
           </Pressable>
-          <Text style={styles.editDate}>
-            {new Date(editMatch.date).toLocaleDateString(locale, { month: 'short', day: 'numeric' })}
-          </Text>
+          <View style={styles.editHeaderRight}>
+            <Text style={styles.editDate}>
+              {new Date(editMatch.date).toLocaleDateString(locale, { month: 'short', day: 'numeric' })}
+            </Text>
+            <Pressable onPress={() => confirmarExclusao(editMatch)} hitSlop={8} style={styles.deleteBtn}>
+              <Icon name="trash" size={16} stroke={colors.bad} />
+            </Pressable>
+          </View>
         </View>
         <View style={styles.formWrap}>
           <MatchForm
@@ -288,6 +312,7 @@ export function HistoryScreen() {
                 <View style={{ flex: 1 }}>
                   <Text style={styles.rowTitle}>
                     {h.vs} {nomeDoOponente(m) ?? (m.oppDeck || '—')}
+                    {placarTexto(m.games) ? `  ${placarTexto(m.games)}` : ''}
                   </Text>
                   <Text style={styles.rowSub}>
                     {/* O deck do oponente só entra na segunda linha quando o
@@ -463,6 +488,14 @@ const styles = StyleSheet.create({
   },
   backText: { fontSize: 13, fontFamily: 'Inter', fontWeight: '500', color: colors.ink },
   editDate: { fontSize: 9.5, fontFamily: 'JetBrainsMono', color: colors.ink3 },
+  editHeaderRight: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  deleteBtn: {
+    padding: 6,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.line,
+    backgroundColor: colors.surface,
+  },
   formWrap: { flex: 1, paddingHorizontal: 20, paddingTop: 10 },
   emptyTitle: { fontSize: 14, fontWeight: '600', fontFamily: 'Inter', color: colors.ink },
   emptySub: { fontSize: 12, fontFamily: 'Inter', color: colors.ink3, marginTop: 4, textAlign: 'center' },

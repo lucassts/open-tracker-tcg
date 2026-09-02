@@ -79,3 +79,41 @@ describe('parseCSV', () => {
     expect(parsed.onPlay).toBe(true);
   });
 });
+
+/**
+ * O placar é a informação nova do histórico. Se ele não sobrevive a exportar
+ * e reimportar, o primeiro backup apaga o que a mudança inteira serviu para
+ * guardar.
+ */
+describe('placar no CSV', () => {
+  const comPlacar: Match = {
+    ...base,
+    id: 'g1',
+    games: ['me', 'opp', 'me'],
+    won: true,
+    drew: false,
+  };
+
+  it('ida e volta preserva o placar', () => {
+    const [lido] = parseCSV(toCSV([comPlacar]));
+    expect(lido.games).toEqual(['me', 'opp', 'me']);
+  });
+
+  it('partida sem placar volta sem a chave, e não com placar vazio', () => {
+    const [lido] = parseCSV(toCSV([{ ...base, id: 'g2' }]));
+    expect(lido).not.toHaveProperty('games');
+  });
+
+  it('placar parcial preserva os buracos', () => {
+    const [lido] = parseCSV(toCSV([{ ...comPlacar, games: ['opp', null, null] }]));
+    expect(lido.games).toEqual(['opp', null, null]);
+  });
+
+  it('CSV antigo, sem a coluna, continua importando', () => {
+    const antigo = 'id,date,format,myDeck,oppDeck,won,drew\n'
+      + 'x1,2026-01-01T00:00:00.000Z,Modern,Burn,Tron,TRUE,FALSE';
+    const [lido] = parseCSV(antigo);
+    expect(lido.id).toBe('x1');
+    expect(lido).not.toHaveProperty('games');
+  });
+});

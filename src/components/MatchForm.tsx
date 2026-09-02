@@ -15,6 +15,9 @@ import { getArchetypeForDeck } from '../data/decks';
 import { useStore } from '../store/useStore';
 import { defaultDeckVersion, lastUseOfDeck } from '../utils/deckVersion';
 import { useKeyboardAware } from '../hooks/useKeyboardAware';
+import {
+  Games, GAMES_VAZIOS, contar, placarTexto, resultadoDosGames,
+} from '../utils/games';
 
 interface MatchFormProps {
   initial?: Partial<Match>;
@@ -96,6 +99,52 @@ export function MatchForm({
   const opponents = useStore(s => s.opponents);
   const socialOn = useStore(s => s.settings.social.enabled);
   const { scrollProps, subirCampo, folga } = useKeyboardAware();
+
+  /**
+   * Quem levou cada game. O resultado é consequência, e por isso não existe
+   * botão de "vitória": marcar o game é a única coisa que se faz aqui.
+   *
+   * Tocar de novo no lado já marcado desmarca — é como se corrige um toque
+   * errado sem ter um terceiro botão só para isso.
+   */
+  const games: Games = match.games ?? GAMES_VAZIOS;
+
+  const marcarGame = (i: number, quem: 'me' | 'opp' | null) => {
+    const proximos = [...games] as Games;
+    proximos[i] = proximos[i] === quem ? null : quem;
+    const resultado = resultadoDosGames(proximos);
+    setMatch(m => ({
+      ...m,
+      games: proximos,
+      won: resultado?.won ?? false,
+      drew: resultado?.drew ?? false,
+    }));
+  };
+
+  const handle = useStore(st => st.settings.social.handle);
+  const temConta = useStore(st => st.settings.social.enabled);
+  /** O nome de cada lado nas três linhas. Sem conta e sem oponente, os papéis. */
+  const euLabel = temConta && handle ? `@${handle}` : mf.me;
+  const eleLabel = match.opponentName?.trim() || mf.them;
+
+  const placar = contar(games);
+  const nomeDoResultado = (won: boolean, drew: boolean) =>
+    drew ? mf.drew : won ? mf.win : mf.loss;
+
+  /**
+   * A linha embaixo dos games.
+   *
+   * Com placar, mostra placar e conclusão. Sem placar, mostra o resultado que
+   * já veio de outro lugar — a IA ouve "ganhei" e sabe o resultado sem saber
+   * os games, e deixar a linha só com "marque quem levou cada game" faria
+   * parecer que o que ela entendeu se perdeu. Nada é inventado: o placar
+   * continua vazio até alguém marcar.
+   */
+  const resumoDoPlacar = placar.me + placar.opp > 0
+    ? `${placarTexto(games)} · ${nomeDoResultado(placar.me > placar.opp, placar.me === placar.opp)}`
+    : initial && (initial.won !== undefined || initial.drew)
+      ? `${nomeDoResultado(Boolean(match.won), Boolean(match.drew))} · ${mf.gamesHint}`
+      : mf.gamesHint;
 
   /**
    * Pergunta antes de gravar a segunda partida contra a mesma pessoa no mesmo
@@ -217,21 +266,32 @@ export function MatchForm({
           />
         </Field>
 
-        {/* Result */}
+        {/* Games — o resultado sai daqui, não é digitado */}
         <Field label={mf.result} confKey="won" conf={conf}>
-          <SegmentedControl
-            options={[
-              { label: mf.win, value: 'win' },
-              { label: mf.drew, value: 'draw' },
-              { label: mf.loss, value: 'loss' },
-            ]}
-            value={match.drew ? 'draw' : match.won ? 'win' : 'loss'}
-            onChange={v => {
-              if (v === 'win') setMatch(m => ({ ...m, won: true, drew: false }));
-              else if (v === 'draw') setMatch(m => ({ ...m, won: false, drew: true }));
-              else setMatch(m => ({ ...m, won: false, drew: false }));
-            }}
-          />
+          <View style={styles.games}>
+            {[0, 1, 2].map(i => (
+              <View key={i} style={styles.gameRow}>
+                <Text style={styles.gameLabel}>{mf.game(i + 1)}</Text>
+                <View style={{ flex: 1 }}>
+                  <SegmentedControl
+                    options={[
+                      { label: euLabel, value: 'me' },
+                      { label: eleLabel, value: 'opp' },
+                    ]}
+                    value={games[i] ?? ''}
+                    onChange={v => marcarGame(i, v as 'me' | 'opp')}
+                    fontSize={11}
+                  />
+                </View>
+                {games[i] && (
+                  <Pressable onPress={() => marcarGame(i, null)} hitSlop={8}>
+                    <Icon name="x" size={14} stroke={colors.ink4} />
+                  </Pressable>
+                )}
+              </View>
+            ))}
+            <Text style={styles.gamesResumo}>{resumoDoPlacar}</Text>
+          </View>
         </Field>
 
         {/* Format */}
@@ -404,6 +464,23 @@ const styles = StyleSheet.create({
     letterSpacing: 0.8,
     textTransform: 'uppercase',
     color: colors.ink3,
+  },
+  games: { gap: 8 },
+  gameRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  gameLabel: {
+    width: 52,
+    fontSize: 9.5,
+    fontFamily: 'JetBrainsMono',
+    letterSpacing: 0.6,
+    textTransform: 'uppercase',
+    color: colors.ink3,
+  },
+  gamesResumo: {
+    fontSize: 11,
+    fontFamily: 'Inter',
+    color: colors.ink3,
+    marginTop: 2,
+    marginLeft: 60,
   },
   confBadge: {
     marginLeft: 6,

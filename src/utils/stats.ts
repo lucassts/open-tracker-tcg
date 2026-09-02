@@ -8,6 +8,8 @@ export function applyFilters(matches: Match[], filters: Filters): Match[] {
     // String vazia representa "sem versão" — partida salva antes de o deck
     // passar a ser versionado. Sem esse caso o filtro esconderia histórico.
     if (filters.version?.length > 0 && !filters.version.includes(m.deckVersion || '')) return false;
+    // Mesmo raciocínio da versão: a string vazia é a opção "sem local".
+    if (filters.venue?.length > 0 && !filters.venue.includes(m.venueName || '')) return false;
     if (filters.period && filters.period !== 'All') {
       if (filters.period === '1d') {
         // "Hoje" = a partir da meia-noite do dia atual (horário local)

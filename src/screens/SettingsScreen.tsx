@@ -14,7 +14,7 @@ import { useRecentDecks } from '../store/selectors';
 import { parseCSV } from '../utils/csv';
 import { exportCSV } from '../utils/exportCsv';
 import { readTextFile } from '../utils/readTextFile';
-import { Language } from '../types';
+import { LANGUAGES } from '../i18n/languages';
 import { useT } from '../i18n/useT';
 import { useTabReset } from '../hooks/useTabReset';
 import { useKeyboardAware } from '../hooks/useKeyboardAware';
@@ -55,12 +55,6 @@ function Row({ children, onPress, style }: {
 }
 
 // ─── SettingsScreen ─────────────────────────────────────────
-
-const LANGUAGES: { code: Language; label: string; sub: string }[] = [
-  { code: 'en-US', label: 'English', sub: 'English (US)' },
-  { code: 'pt-BR', label: 'Português', sub: 'Português (Brasil)' },
-  { code: 'ja-JP', label: '日本語', sub: 'Japanese' },
-];
 
 const ALL_FORMATS = ['Commander', 'Modern', 'Standard', 'Pioneer', 'Legacy', 'Pauper', 'Draft', 'Other'];
 
@@ -238,28 +232,6 @@ export function SettingsScreen() {
         </Card>
       </View>
 
-      {/* Language */}
-      <View>
-        <SectionLabel label={s.language} />
-        <Card>
-          {LANGUAGES.map((lang, i) => (
-            <Row
-              key={lang.code}
-              onPress={() => set('language', lang.code)}
-              style={[i < LANGUAGES.length - 1 && styles.rowBorder]}
-            >
-              <View style={{ flex: 1 }}>
-                <Text style={styles.rowTitle}>{lang.label}</Text>
-                <Text style={styles.rowSub}>{lang.sub}</Text>
-              </View>
-              {currentLang === lang.code && (
-                <Icon name="check" size={16} stroke={colors.ink} />
-              )}
-            </Row>
-          ))}
-        </Card>
-      </View>
-
       {/* Data */}
       <View>
         <SectionLabel label={s.data} />
@@ -426,6 +398,28 @@ export function SettingsScreen() {
               </View>
             </>
           )}
+        </Card>
+      </View>
+
+      {/* Language */}
+      <View>
+        <SectionLabel label={s.language} />
+        <Card>
+          {LANGUAGES.map((lang, i) => (
+            <Row
+              key={lang.code}
+              onPress={() => set('language', lang.code)}
+              style={[i < LANGUAGES.length - 1 && styles.rowBorder]}
+            >
+              <View style={{ flex: 1 }}>
+                <Text style={styles.rowTitle}>{lang.label}</Text>
+                <Text style={styles.rowSub}>{lang.sub}</Text>
+              </View>
+              {currentLang === lang.code && (
+                <Icon name="check" size={16} stroke={colors.ink} />
+              )}
+            </Row>
+          ))}
         </Card>
       </View>
 

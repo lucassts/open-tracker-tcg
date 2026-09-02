@@ -13,6 +13,7 @@ import { claimPayload, submitClaim, sessionState } from '../services/social';
 import { pushMatches, pullMatches, ensureSyncId } from '../services/matchSync';
 import { shouldSync, SyncOutcome } from '../utils/syncThrottle';
 import { defaultDeckVersion, lastUseOfDeck } from '../utils/deckVersion';
+import { gamesSupostos, resultadoDosGames } from '../utils/games';
 import { ehSessaoVencida } from '../services/erros';
 import { getArchetypeForDeck } from '../data/decks';
 
@@ -37,6 +38,8 @@ interface AppState {
   // Actions
   addMatch: (match: Omit<Match, 'id' | 'date'>) => void;
   updateMatch: (match: Match) => void;
+  /** Apaga uma partida. A confirmação é da tela: aqui já é decisão tomada. */
+  deleteMatch: (id: string) => void;
   deleteAllData: () => void;
   updateSettings: (partial: Partial<Settings>) => void;
   setPendingReview: (review: PendingReview | null) => void;
@@ -148,6 +151,16 @@ export const useStore = create<AppState>()(
           ...matchData,
         };
 
+        // Os games mandam no resultado. `won`/`drew` continuam gravados
+        // porque estatística, CSV e servidor os leem, mas passam a ser
+        // consequência do placar em vez de um segundo lugar onde a verdade
+        // mora — dois lugares discordariam mais cedo ou mais tarde.
+        const doPlacar = resultadoDosGames(match.games);
+        if (doPlacar) {
+          match.won = doPlacar.won;
+          match.drew = doPlacar.drew;
+        }
+
         set(state => {
           const { settings, telemetryQueue } = state;
 
@@ -204,9 +217,21 @@ export const useStore = create<AppState>()(
       },
 
       updateMatch: (updated) => {
+        const doPlacar = resultadoDosGames(updated.games);
+        const coerente = doPlacar ? { ...updated, ...doPlacar } : updated;
         set(state => ({
-          matches: state.matches.map(m => m.id === updated.id ? updated : m),
+          matches: state.matches.map(m => m.id === coerente.id ? coerente : m),
         }));
+      },
+
+      /**
+       * A partida sai do aparelho. A linha no servidor não é removida aqui:
+       * a próxima sincronização não a traz de volta porque o pull só atualiza
+       * o que ainda existe localmente, e apagar do lado de lá exigiria decidir
+       * também pela cópia do oponente, que é dele.
+       */
+      deleteMatch: (id) => {
+        set(state => ({ matches: state.matches.filter(m => m.id !== id) }));
       },
 
       deleteAllData: () => {
@@ -683,7 +708,7 @@ export const useStore = create<AppState>()(
     }),
     {
       name: 'mtg-tracker-storage',
-      version: 6,
+      version: 7,
       storage: createJSONStorage(() => AsyncStorage),
       partialize: (state) => ({
         matches: state.matches,
@@ -778,6 +803,18 @@ export const useStore = create<AppState>()(
             playerId: undefined,
             remoteName: undefined,
           }));
+        }
+
+        // v6 → v7: a partida passa a guardar quem levou cada game. O
+        // histórico anterior não tem essa informação, e inventá-la seria
+        // mentir; o que a migração faz é declarar a suposição — vitória 2x1,
+        // empate 1x1, derrota 1x2 — para a base inteira passar a ter placar
+        // sem perder nada do que já estava lá. O resultado gravado não muda:
+        // `gamesSupostos` é construído para reproduzi-lo.
+        if (version < 7 && state.matches) {
+          state.matches = state.matches.map(m =>
+            m.games ? m : { ...m, games: gamesSupostos(m.won, m.drew) }
+          );
         }
 
         return state as AppState;

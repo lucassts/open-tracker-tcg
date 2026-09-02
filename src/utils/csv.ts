@@ -6,8 +6,27 @@ import { Match } from '../types';
  */
 export const CSV_HEADERS = [
   'id', 'date', 'format', 'myDeck', 'deckVersion', 'oppDeck',
-  'archetype', 'onPlay', 'won', 'drew', 'notes',
+  'archetype', 'onPlay', 'won', 'drew', 'games', 'notes',
 ] as const;
+
+/**
+ * O placar cabe numa célula como "me|opp|me" — três posições separadas por
+ * barra, vazio onde o game não foi jogado. Sem isso, exportar e reimportar
+ * devolveria a partida sem placar, e a informação mais fina do histórico
+ * morreria no primeiro backup.
+ */
+export function gamesParaCelula(games: Match['games']): string {
+  if (!games || games.every(g => !g)) return '';
+  return games.map(g => g ?? '').join('|');
+}
+
+export function celulaParaGames(cell: string): Match['games'] | undefined {
+  const partes = cell.split('|').map(p => p.trim());
+  const valor = (v: string) => (v === 'me' || v === 'opp' ? v : null);
+  const games = [valor(partes[0] ?? ''), valor(partes[1] ?? ''), valor(partes[2] ?? '')] as
+    NonNullable<Match['games']>;
+  return games.some(Boolean) ? games : undefined;
+}
 
 function escapeCell(value: unknown): string {
   if (typeof value === 'boolean') return value ? 'TRUE' : 'FALSE';
@@ -20,7 +39,11 @@ function escapeCell(value: unknown): string {
 
 export function toCSV(matches: Match[]): string {
   const rows = matches.map(m =>
-    CSV_HEADERS.map(h => escapeCell((m as unknown as Record<string, unknown>)[h])).join(',')
+    CSV_HEADERS.map(h => escapeCell(
+      h === 'games'
+        ? gamesParaCelula(m.games)
+        : (m as unknown as Record<string, unknown>)[h]
+    )).join(',')
   );
   return [CSV_HEADERS.join(','), ...rows].join('\n');
 }
@@ -102,6 +125,10 @@ export function parseCSV(text: string, now: number = Date.now()): Match[] {
     if (obj.drew == null) obj.drew = false;
     // Coluna vazia significa "sem versão", não uma versão chamada "".
     if (!obj.deckVersion) delete obj.deckVersion;
+
+    const games = celulaParaGames(String(obj.games ?? ''));
+    if (games) obj.games = games;
+    else delete obj.games;
 
     return obj as unknown as Match;
   });
