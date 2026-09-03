@@ -159,7 +159,7 @@ export function StatsScreen() {
       : s.versionCount(filters.version.length);
 
   // Quem assina o card: o apelido da conta, se houver uma conectada.
-  const autor = social.enabled && social.handle ? `@${social.handle}` : 'MTG TRACKER';
+  const autor = social.enabled && social.handle ? `@${social.handle}` : 'OPEN-TRACKER-TCG';
 
   // Label do período para o share card
   const periodLabelMap: Record<string, string> = {

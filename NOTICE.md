@@ -4,11 +4,14 @@
 
 Magic: The Gathering é marca registrada da Wizards of the Coast LLC.
 
-Este projeto é conteúdo não oficial de fã. Não é produzido, endossado nem
+O Open-Tracker-TCG é um projeto independente. Não é produzido, endossado nem
 afiliado à Wizards of the Coast, e não distribui dados de cartas, imagens de
-cartas ou qualquer outra propriedade intelectual da empresa. Os nomes de deck
-que aparecem no app são digitados pelos próprios usuários ou constam de uma
-lista de arquétipos populares mantida no repositório.
+cartas ou qualquer outra propriedade intelectual da empresa. O nome do app não
+faz referência a nenhuma marca: ele registra partidas de card game em geral.
+
+Os nomes de deck e de formato que aparecem no app são digitados pelos próprios
+usuários, ou constam de uma lista de arquétipos populares mantida no
+repositório — usada só como sugestão de digitação.
 
 ## Fontes
 

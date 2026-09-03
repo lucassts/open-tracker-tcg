@@ -1,6 +1,6 @@
 # Privacidade
 
-Este documento descreve exatamente o que o MTG Tracker faz com dados. Ele vale para o código deste repositório; um build de terceiro pode ter sido alterado.
+Este documento descreve exatamente o que o Open-Tracker-TCG faz com dados. Ele vale para o código deste repositório; um build de terceiro pode ter sido alterado.
 
 ## Três coisas diferentes
 

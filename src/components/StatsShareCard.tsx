@@ -321,7 +321,7 @@ export function StatsShareCard({
       {/* ── Footer ── */}
       <View style={styles.footer}>
         <View style={styles.accentDotSmall} />
-        <Text style={styles.footerText}>mtg-tracker · on-device · no cloud</Text>
+        <Text style={styles.footerText}>open-tracker-tcg · on-device · no cloud</Text>
       </View>
     </View>
   );

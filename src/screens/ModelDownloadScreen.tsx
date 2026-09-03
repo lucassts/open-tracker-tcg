@@ -54,7 +54,7 @@ export function ModelDownloadScreen({ onReady, onCancel }: Props) {
       {/* Logo area */}
       <View style={styles.top}>
         <Text style={styles.logo}>🎴</Text>
-        <Text style={styles.title}>MTG Tracker</Text>
+        <Text style={styles.title}>Open-Tracker-TCG</Text>
         <Text style={styles.subtitle}>{m.subtitle}</Text>
       </View>
 

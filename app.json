@@ -1,9 +1,9 @@
 {
   "expo": {
-    "name": "MTG Tracker",
-    "slug": "mtg-tracker",
+    "name": "Open-Tracker-TCG",
+    "slug": "open-tracker-tcg",
     "version": "1.0.0",
-    "scheme": "mtgtracker",
+    "scheme": "opentracker",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -23,8 +23,8 @@
       "supportsTablet": false,
       "bundleIdentifier": "com.mtgtracker.app",
       "infoPlist": {
-        "NSMicrophoneUsageDescription": "MTG Tracker usa o microfone para você descrever sua partida por voz.",
-        "NSSpeechRecognitionUsageDescription": "MTG Tracker processa sua voz localmente para extrair dados da partida."
+        "NSMicrophoneUsageDescription": "O Open-Tracker-TCG usa o microfone para você descrever sua partida por voz.",
+        "NSSpeechRecognitionUsageDescription": "O Open-Tracker-TCG processa sua voz localmente para extrair dados da partida."
       }
     },
     "android": {
@@ -36,7 +36,7 @@
       "permissions": [
         "android.permission.RECORD_AUDIO"
       ],
-      "versionCode": 14
+      "versionCode": 15
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -45,7 +45,7 @@
       [
         "expo-audio",
         {
-          "microphonePermission": "MTG Tracker usa o microfone para você descrever sua partida por voz."
+          "microphonePermission": "O Open-Tracker-TCG usa o microfone para você descrever sua partida por voz."
         }
       ],
       "llama.rn",

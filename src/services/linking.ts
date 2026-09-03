@@ -7,7 +7,7 @@
  */
 
 /** Precisa bater com `expo.scheme` no app.json. */
-export const APP_SCHEME = 'mtgtracker';
+export const APP_SCHEME = 'opentracker';
 
 /** Preview web do app. */
 export const WEB_BASE = 'https://mtg-tracker-livid.vercel.app';

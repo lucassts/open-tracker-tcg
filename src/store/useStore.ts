@@ -714,6 +714,9 @@ export const useStore = create<AppState>()(
       },
     }),
     {
+      // O nome do app mudou, esta chave não: é onde o histórico de quem já
+      // usa o app está guardado. Renomear abriria o app vazio, e o ganho
+      // seria só cosmético — ninguém vê o nome de uma chave do AsyncStorage.
       name: 'mtg-tracker-storage',
       version: 7,
       storage: createJSONStorage(() => AsyncStorage),

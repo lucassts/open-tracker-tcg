@@ -177,7 +177,7 @@ export const translations = {
       deleteConfirmBody: 'Isso apagará permanentemente todas as suas partidas. Esta ação não pode ser desfeita.',
       deleteConfirmCancel: 'Cancelar',
       deleteConfirmOk: 'Apagar tudo',
-      version: 'MTG Tracker · v1.0 · IA no dispositivo',
+      version: 'Open-Tracker-TCG · v1.0 · IA no dispositivo',
     },
     // Manage Decks
     manageDecks: {
@@ -716,7 +716,7 @@ export const translations = {
       deleteConfirmBody: 'This will permanently delete all your matches. This action cannot be undone.',
       deleteConfirmCancel: 'Cancel',
       deleteConfirmOk: 'Delete all',
-      version: 'MTG Tracker · v1.0 · IA no dispositivo',
+      version: 'Open-Tracker-TCG · v1.0 · IA no dispositivo',
     },
     deckSelector: {
       recent: 'Recently used',
@@ -1243,7 +1243,7 @@ export const translations = {
       deleteConfirmBody: 'すべての対戦記録が完全に削除されます。この操作は元に戻せません。',
       deleteConfirmCancel: 'キャンセル',
       deleteConfirmOk: 'すべて削除',
-      version: 'MTG Tracker · v1.0 · IA no dispositivo',
+      version: 'Open-Tracker-TCG · v1.0 · IA no dispositivo',
     },
     deckSelector: {
       recent: '最近使用',
