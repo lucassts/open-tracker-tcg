@@ -10,7 +10,8 @@ import {
 import { seedMatches } from '../data/seed';
 import { flushQueue, newInstallId, toEvent, QUEUE_LIMIT } from '../services/telemetry';
 import { claimPayload, submitClaim, sessionState } from '../services/social';
-import { pushMatches, pullMatches, ensureSyncId } from '../services/matchSync';
+import { pushMatches, pullMatches, deleteMatches, ensureSyncId } from '../services/matchSync';
+import { adicionarLapide, adicionarLapides, semApagadas } from '../utils/lapides';
 import { shouldSync, SyncOutcome } from '../utils/syncThrottle';
 import { defaultDeckVersion, lastUseOfDeck } from '../utils/deckVersion';
 import { gamesSupostos, resultadoDosGames } from '../utils/games';
@@ -34,6 +35,13 @@ interface AppState {
   venues: Venue[];
   /** Como foi a última sincronização. Null antes da primeira. */
   syncStatus: SyncStatus | null;
+  /**
+   * Partidas apagadas aqui que o servidor ainda não sabe que foram apagadas.
+   *
+   * Sem esta lista, apagar sem rede — ou com a sincronização falhando — não
+   * apagava nada: a leitura seguinte trazia a linha de volta.
+   */
+  deletedSyncIds: string[];
 
   // Actions
   addMatch: (match: Omit<Match, 'id' | 'date'>) => void;
@@ -137,6 +145,7 @@ export const useStore = create<AppState>()(
       opponents: [],
       venues: [],
       syncStatus: null,
+      deletedSyncIds: [],
 
       addMatch: (matchData) => {
         const match: Match = {
@@ -225,21 +234,43 @@ export const useStore = create<AppState>()(
       },
 
       /**
-       * A partida sai do aparelho. A linha no servidor não é removida aqui:
-       * a próxima sincronização não a traz de volta porque o pull só atualiza
-       * o que ainda existe localmente, e apagar do lado de lá exigiria decidir
-       * também pela cópia do oponente, que é dele.
+       * Apagar sai dos dois lados.
+       *
+       * A versão anterior só tirava do aparelho, com a justificativa errada de
+       * que a leitura não traria a partida de volta — traz: linha do servidor
+       * sem correspondente local é tratada como partida de outro aparelho e
+       * recriada. Quem apagava via a partida voltar sozinha.
+       *
+       * A cópia do oponente continua intocada: ela descreve a mesma partida,
+       * mas é o registro dele.
        */
       deleteMatch: (id) => {
-        set(state => ({ matches: state.matches.filter(m => m.id !== id) }));
+        const alvo = get().matches.find(m => m.id === id);
+        set(state => ({
+          matches: state.matches.filter(m => m.id !== id),
+          deletedSyncIds: adicionarLapide(state.deletedSyncIds ?? [], alvo?.syncId),
+        }));
+        // Sem esperar o intervalo: a pessoa acabou de mandar apagar.
+        if (alvo?.syncId) void get().syncMatches(true);
       },
 
+      /**
+       * "Apagar todos os dados" promete apagar permanentemente. Com conta, a
+       * promessa só se cumpre apagando no servidor também — senão a próxima
+       * sincronização devolve tudo, e o botão vira uma limpeza temporária.
+       */
       deleteAllData: () => {
-        // Apagar tudo apaga decks, oponentes, locais e o que não foi enviado.
+        const comConta = get().settings.social.enabled;
+        const lapides = adicionarLapides(
+          get().deletedSyncIds ?? [],
+          get().matches.map(m => m.syncId)
+        );
         set({
           matches: [], telemetryQueue: [], decks: [], deckVersions: [],
           opponents: [], venues: [],
+          deletedSyncIds: lapides,
         });
+        if (comConta && lapides.length > 0) void get().syncMatches(true);
       },
 
       updateSettings: (partial) => {
@@ -595,6 +626,16 @@ export const useStore = create<AppState>()(
         if (!shouldSync(syncStatus?.at, Date.now(), force)) return 'skipped';
 
         try {
+          // A exclusão vai primeiro: mandar o que foi apagado depois de ler
+          // faria a leitura trazer de volta o que acabou de sair.
+          const lapides = get().deletedSyncIds ?? [];
+          if (lapides.length > 0) {
+            await deleteMatches(lapides);
+            set(state => ({
+              deletedSyncIds: (state.deletedSyncIds ?? []).filter(id => !lapides.includes(id)),
+            }));
+          }
+
           // Carimba o UUID de quem ainda não tem, e persiste antes de subir:
           // se o envio falhar, o id já existe e o reenvio atualiza a mesma
           // linha em vez de criar outra.
@@ -610,7 +651,9 @@ export const useStore = create<AppState>()(
 
           const enviadas = await pushMatches(comId, vinculados);
 
-          const remotas = await pullMatches();
+          // Filtra pelas lápides desta rodada: se outro aparelho reenviou a
+          // partida no meio do caminho, ela não renasce aqui.
+          const remotas = semApagadas(await pullMatches(), lapides);
           set({ syncStatus: { at: new Date().toISOString(), pushed: enviadas, pulled: remotas.length } });
           if (remotas.length === 0) return 'ok';
 
@@ -729,6 +772,7 @@ export const useStore = create<AppState>()(
         opponents: state.opponents,
         venues: state.venues,
         syncStatus: state.syncStatus,
+        deletedSyncIds: state.deletedSyncIds,
       }),
       migrate: (persisted, version) => {
         const state = persisted as Partial<AppState>;

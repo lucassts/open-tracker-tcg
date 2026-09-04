@@ -88,6 +88,22 @@ const FORMATS: Format[] = [
 ];
 const ARCHETYPES: Archetype[] = ['Aggro', 'Midrange', 'Control', 'Combo', 'Stax'];
 
+/**
+ * Apaga no servidor as partidas que já saíram deste aparelho.
+ *
+ * Só as próprias — a linha do oponente é o registro dele. Devolve quantas
+ * foram apagadas, e lançar aqui é de propósito: o aparelho precisa saber que
+ * a exclusão não saiu, para tentar de novo.
+ */
+export async function deleteMatches(syncIds: string[]): Promise<number> {
+  const supabase = getSupabase();
+  if (!supabase || syncIds.length === 0) return 0;
+
+  const { data, error } = await supabase.rpc('delete_matches', { p_ids: syncIds });
+  if (error) throw error;
+  return Number(data ?? 0);
+}
+
 /** Baixa tudo o que está na conta. */
 export async function pullMatches(): Promise<RemoteMatch[]> {
   const supabase = getSupabase();

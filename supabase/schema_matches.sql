@@ -219,6 +219,40 @@ begin
 end;
 $$;
 
+-- ─── Exclusão ───────────────────────────────────────────────
+
+/**
+ * Apaga partidas da conta de quem chamou.
+ *
+ * Só as próprias: a linha do oponente descreve a mesma partida, mas é o
+ * registro DELE. Apagar a minha não apaga a memória do outro.
+ *
+ * Existe porque apagar só no aparelho não apagava nada: a leitura seguinte
+ * recria a linha que ainda estava no servidor, e a partida voltava do nada.
+ * O aparelho guarda o id até esta chamada dar certo, então apagar sem rede
+ * também funciona — a exclusão sai na próxima sincronização.
+ */
+create or replace function public.delete_matches(p_ids uuid[])
+returns integer
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  me uuid := auth.uid();
+  n  integer := 0;
+begin
+  if me is null then raise exception 'precisa estar autenticado'; end if;
+  if p_ids is null or array_length(p_ids, 1) is null then return 0; end if;
+
+  delete from public.player_matches
+  where owner_id = me and id = any(p_ids);
+
+  get diagnostics n = row_count;
+  return n;
+end;
+$$;
+
 -- ─── Leitura ────────────────────────────────────────────────
 
 /**
@@ -408,6 +442,7 @@ $$;
 
 revoke all on function public.games_do_json(jsonb)         from public, anon;
 revoke all on function public.games_invertidos(boolean[])  from public, anon;
+revoke all on function public.delete_matches(uuid[])       from public, anon;
 revoke all on function public.push_matches(jsonb)          from public, anon;
 revoke all on function public.pull_matches()               from public, anon;
 revoke all on function public.matches_same_day(uuid, date) from public, anon;
@@ -415,6 +450,7 @@ revoke all on function public.resolve_claim(uuid, boolean) from public, anon;
 
 grant execute on function public.games_do_json(jsonb)         to authenticated;
 grant execute on function public.games_invertidos(boolean[])  to authenticated;
+grant execute on function public.delete_matches(uuid[])       to authenticated;
 grant execute on function public.push_matches(jsonb)          to authenticated;
 grant execute on function public.pull_matches()               to authenticated;
 grant execute on function public.matches_same_day(uuid, date) to authenticated;
